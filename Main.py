@@ -2,13 +2,12 @@ from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional
-import random, string, smtplib, requests
+import random, string, smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
 
 app = FastAPI()
 
-# 🌍 Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,12 +22,21 @@ admin_account = {
     "password": "TitilayoAfolabi"
 }
 
-# 📦 In-memory databases
+# 📘 Course catalog
+course_catalog = {
+    "HTML": { "price": 0, "weeks": [] },
+    "CSS": { "price": 999, "weeks": [] },
+    "JavaScript": { "price": 999, "weeks": [] },
+    "Python": { "price": 999, "weeks": [] },
+    "General": { "price": 4999, "weeks": [] }
+}
+
+# 🧠 Databases
 users_db: Dict[str, dict] = {
-    "titilayoafolabi999@gmail.com": {
-        "username": "Titilayo999",
-        "email": "titilayoafolabi999@gmail.com",
-        "password": "TitilayoAfolabi",
+    admin_account["email"]: {
+        "username": admin_account["username"],
+        "email": admin_account["email"],
+        "password": admin_account["password"],
         "referral_code": None,
         "email_verified": True,
         "joined": "admin",
@@ -41,19 +49,17 @@ valid_codes: Dict[str, dict] = {}
 update_mode = {"status": False}
 broadcast_feed: List[dict] = []
 
-# 📧 Gmail sender
+# ✉️ Email sender
 def send_email(to_email, code):
     msg = MIMEText(f"""
-    <html>
-      <body style="font-family:sans-serif;">
-        <h2>Welcome to CODE ACADEMIA 🎓</h2>
-        <p>Your unlock code is:</p>
-        <div style="background:#f9f9f9;padding:10px;border:1px solid #ccc;">
-          <h1>{code}</h1>
-        </div>
-        <p style="font-size:0.9em;color:#666;">This is an automated message from <b>CODE ACADEMIA</b>. Do not reply.</p>
-      </body>
-    </html>
+    <html><body>
+    <h2>Welcome to CODE ACADEMIA 🎓</h2>
+    <p>Your unlock code is:</p>
+    <div style="background:#f0f0f0;border:1px solid #ccc;padding:10px">
+      <h1>{code}</h1>
+    </div>
+    <p style="font-size:0.8em;color:#666">This is an automated message from CODE ACADEMIA.</p>
+    </body></html>
     """, "html")
     msg["Subject"] = "Your CODE ACADEMIA Access Code"
     msg["From"] = "no-reply@codeacademia.com"
@@ -64,7 +70,7 @@ def send_email(to_email, code):
         server.login(admin_account["email"], admin_account["password"])
         server.send_message(msg)
 
-# 🧾 Models
+# 📋 Models
 class Account(BaseModel):
     username: str
     email: str
@@ -86,7 +92,7 @@ class BroadcastMessage(BaseModel):
     title: str
     body: str
 
-# 👤 Signup
+# 🧾 Account creation
 @app.post("/create_account")
 def create_account(data: Account):
     if data.email in users_db:
@@ -103,12 +109,16 @@ def create_account(data: Account):
     }
     return {"status": "Account created"}
 
-# 🔐 Login
+# 🔑 Login
 @app.post("/login")
 def login(data: Login):
     user = users_db.get(data.email)
     if user and user["password"] == data.password:
-        return {"status": "Login successful", "username": user["username"]}
+        return {
+            "status": "Login successful",
+            "username": user["username"],
+            "role": user["joined"]
+        }
     return {"error": "Invalid email or password"}
 
 # 📈 Progress
@@ -121,7 +131,7 @@ def update_progress(data: Progress):
 def get_progress(email: str):
     return progress_db.get(email, {"error": "User not found"})
 
-# 🔓 Generate unlock code (expires in 10 minutes)
+# 🔓 Unlock code (expires in 10 minutes)
 @app.get("/generate_code")
 def generate_code():
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -133,7 +143,7 @@ def generate_code():
 
 @app.get("/verify_code/{code}")
 def verify_code(code: str):
-    code = code.upper().strip()
+    code = code.strip().upper()
     data = valid_codes.get(code)
     if not data:
         return {"error": "Invalid code"}
@@ -154,23 +164,19 @@ def toggle_update():
 def get_status():
     return {"update_in_progress": update_mode["status"]}
 
-# 🛠 Admin approval (secure)
+# 🛠 Secure approval flow
 @app.post("/admin/approve_payment")
 def approve_payment(student_email: str = Form(...), admin_password: str = Form(...)):
     if admin_password != admin_account["password"]:
         return {"error": "Invalid admin password"}
     if student_email not in users_db:
         return {"error": "Student not found"}
-
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    valid_codes[code] = {
-        "used": False,
-        "created": datetime.now()
-    }
+    valid_codes[code] = {"used": False, "created": datetime.now()}
     send_email(student_email, code)
     return {"status": f"Code sent to {student_email}", "code": code}
 
-# 🧍 Admin tools
+# 👤 Admin insights
 @app.get("/admin/user_count")
 def user_count():
     return {"total_users": len(users_db)}
@@ -182,15 +188,7 @@ def user_profile(email: str):
         return {"error": "User not found"}
     progress = progress_db.get(email, {})
     return {
-        "profile": {
-            "username": user["username"],
-            "email": user["email"],
-            "email_verified": user["email_verified"],
-            "referral_code": user["referral_code"],
-            "referrals": user["referrals"],
-            "joined_via": user["joined"],
-            "created": user["created"]
-        },
+        "profile": user,
         "progress": progress
     }
 
@@ -224,7 +222,7 @@ def delete_user(email: str):
 def export_users():
     return {"data": users_db}
 
-# 📢 Social feed
+# 📣 Social feed
 @app.post("/admin/broadcast_message")
 def broadcast_message(data: BroadcastMessage):
     entry = {
@@ -238,3 +236,40 @@ def broadcast_message(data: BroadcastMessage):
 @app.get("/social_feed")
 def social_feed():
     return {"feed": broadcast_feed[::-1]}
+
+# 📚 Curriculum access
+@app.get("/get_course/{course_name}")
+def get_course(course_name: str):
+    course = course_catalog.get(course_name)
+    if not course:
+        return {"error": "Course not found"}
+    return course
+
+# 💸 Update course price
+@app.post("/admin/update_price")
+def update_course_price(course: str = Form(...), new_price: int = Form(...)):
+    if course not in course_catalog:
+        return {"error": "Course not found"}
+    course_catalog[course]["price"] = new_price
+    return {"status": f"{course} price updated to ₦{new_price}"}
+
+# 📝 Add new lesson
+@app.post("/admin/add_lesson")
+def add_lesson(course: str = Form(...), week
+               @app.post("/admin/add_lesson")
+def add_lesson(
+    course: str = Form(...),
+    week: int = Form(...),
+    title: str = Form(...),
+    lesson: str = Form(...),
+    admin_password: str = Form(...)
+):
+    if admin_password != admin_account["password"]:
+        return {"error": "Invalid admin password"}
+    
+    if course not in course_catalog:
+        return {"error": "Course not found"}
+
+    entry = { "week": week, "title": title, "lesson": lesson }
+    course_catalog[course]["weeks"].append(entry)
+    return {"status": f"Week {week} added to {course}"}

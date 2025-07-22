@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CODE ACADEMIA</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- 🌟 Logo -->
+  <img src="../assets/logo/code_academia_logo.png" alt="CODE ACADEMIA" class="logo" />
+
+  <!-- 🚀 Navigation Tabs -->
+  <nav class="navbar">
+    <button onclick="showTab('dashboard')">🏠 Dashboard</button>
+    <button onclick="showTab('courses')">📚 Courses</button>
+    <button onclick="showTab('editor')">🧪 Code Lab</button>
+    <button onclick="showTab('progress')">📈 Progress</button>
+    <button onclick="showTab('whatsnew')">💬 What's New <span id="newFlag">🆕</span></button>
+  </nav>
+
+  <!-- 🏠 Dashboard -->
+  <section id="dashboard" class="tab active">
+    <h1>Welcome to CODE ACADEMIA</h1>
+    <p>Your journey begins now. Code boldly!</p>
+  </section>
+
+  <!-- 📚 Courses -->
+  <section id="courses" class="tab">
+    <h2>Your Courses</h2>
+    <div id="courseList">
+      <!-- Courses will be populated here dynamically -->
+    </div>
+  </section>
+
+  <!-- 🧪 Code Editor -->
+  <section id="editor" class="tab">
+    <h2>CODE LAB</h2>
+    <div class="editor-tabs">
+      <button onclick="switchEditor('html')">HTML</button>
+      <button onclick="switchEditor('css')">CSS</button>
+      <button onclick="switchEditor('js')">JavaScript</button>
+      <button onclick="switchEditor('python')">Python</button>
+    </div>
+    <textarea id="html" class="code" placeholder="Write HTML..."></textarea>
+    <textarea id="css" class="code" style="display:none" placeholder="Write CSS..."></textarea>
+    <textarea id="js" class="code" style="display:none" placeholder="Write JavaScript..."></textarea>
+    <textarea id="python" class="code" style="display:none" placeholder="Write Python..."></textarea>
+    <button onclick="runCode()">▶️ Run</button>
+    <iframe id="preview"></iframe>
+    <pre id="pythonOutput"></pre>
+  </section>
+
+  <!-- 📈 Progress -->
+  <section id="progress" class="tab">
+    <h2>My Progress</h2>
+    <div id="progressTracker">
+      <!-- Progress will be tracked here -->
+    </div>
+  </section>
+
+  <!-- 💬 What's New -->
+  <section id="whatsnew" class="tab">
+    <h2>📢 Announcements</h2>
+    <div id="newsFeed">
+      <!-- Admin broadcasts will appear here -->
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

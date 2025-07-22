@@ -1,5 +1,8 @@
 fastapi
 uvicorn
 pydantic
+requests
 python-dotenv
 email-validator
+twilio
+websockets
